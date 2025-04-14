@@ -1,4 +1,5 @@
-import json 
+import json
+import art  
 
 class Room:
     """A class representing a room in the text adventure game.
@@ -365,7 +366,12 @@ def create_room():
 
         "Treasure Room": Room(
             name="Treasure Room",
-            description="You are in a dimly lit treasure room. A large chest sits in the corner.",
+            description="You are in a dimly lit treasure room. A large chest sits in the corner.\n"
+            "  ----\n"
+            "  /    \\\n"
+            " /------\\\n"
+            " | ***  | \n"
+            " |------|",
             exits={"south": "Kitchen"},
             chest_locked=True,
             guard_present=True
@@ -451,6 +457,7 @@ def play_game():
     """
     rooms = create_room()
     player = Player(rooms["Hall"])
+    print(art.text2art("Text Adventure"))
     print("Welcome to the Text Adventure Game!")
     print("You goal: Find the golden crown and escape with it!")
     print("\nAvialable Commands:")
@@ -466,6 +473,7 @@ def play_game():
 
         if any(item.name == "golden crown" for item in player.inventory):
             player.add_score(100)
+            print(art.text2art("You win!"))
             print("\nCongratulation! You have obtained the golden crown and won the game!")
             print(f"Final score: {player.score}")
             return False
