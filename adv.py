@@ -1,5 +1,6 @@
 import json
-import art  
+import art
+import os   
 
 class Room:
     """A class representing a room in the text adventure game.
@@ -208,6 +209,46 @@ class Player:
         """
         self.score += points
         print(f"You earned {points} points! Total score: {self.score}")
+
+    def load_leaderboard(self):
+        """Load the leaderboard from leaderboard.json.
+        Returns:
+        list: A list of dictionaries containing names and scores.
+        """
+        if os.path.exists("leaderboard.json"):
+            with open("leaderboard.json", "r") as f:
+                return json.load(f)
+        return[]
+
+    def save_leaderboard(self, leaderboard):
+        """Save the leaderboard to leaderboard.json.
+        Args:
+        leaderboard (list): A list of dictionaries containing names and scores.
+        """
+        with open("leaderboard.json", "w") as f:
+            json.dump(leaderboard, f)
+    def update_leaderboard(self, player_name):
+        """Add the player's score to the leaderboard and keep the top 5 scores.
+        Args:
+        player_name (str): The name of the player.
+        """
+        leaderboard = self.load_leaderboard()
+        leaderboard.append({"name": player_name, "score": self.score})
+        leaderboard = sorted(leaderboard, key=lambda x: x["score"], reverse=True)[:5]
+        self.save_leaderboard(leaderboard)
+
+    def display_leaderboard(self):
+        """Display the current leaderboard.
+        Return:
+        str: A formatted string of the leaderboard.
+        """
+        leaderboard = self.load_leaderboard()
+        if not leaderboard:
+            return "Leaderboard is empty."
+        result = "Leaderboard:\n"
+        for i, entry in enumerate(leaderboard, 1):
+            result += f"{i}.{entry['name']}: {entry['score']} points\n"
+        return result
 
 class Item:
     """A base class for items in the text adventure game.
@@ -460,6 +501,10 @@ def play_game():
     print(art.text2art("Text Adventure"))
     print("Welcome to the Text Adventure Game!")
     print("You goal: Find the golden crown and escape with it!")
+    player_name = input("Please enter your name:").strip()
+    while not player_name:
+        player_name = input("Name cannot be empty. Please enter your name:").strip()
+    
     print("\nAvialable Commands:")
     print("-Movement: north, east, south, west")
     print("-Actions: take <item>, use <item>, inventory, hint, save, load, help, quit")
@@ -476,11 +521,15 @@ def play_game():
             print(art.text2art("You win!"))
             print("\nCongratulation! You have obtained the golden crown and won the game!")
             print(f"Final score: {player.score}")
+            player.update_leaderboard(player_name)
+            print(player.display_leaderboard())
             return False
 
         if player.current_room.trap and "shield" not in [item.name for item in player.inventory]:
             print("\nYou triggered a trap in the Garden and lost!")
             print(f"Final score: {player.score}")
+            player.update_leaderboard(player_name)
+            print(player.display_leaderboard())
             return False
 
         command = input("What do you want to do? ").strip()
