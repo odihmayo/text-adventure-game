@@ -41,7 +41,7 @@ Installation:
 - Save and load your progress to a JSON file. 
 - Earn points for actions like taking treasures or solving puzzles.
   ASCII art for the title screen, treasure chest, and win screen.
-  A scoring leaderboard that tracks the top 5 highscores.
+  A scoring leaderboard that tracks the top 5 highscores (viewable anytime with the 'leaderboard' command).
   Sound effects for key events: entering the treasure room, winning the game, and triggering a trap
   (requires '.wav' files in a sound\folder).
 
