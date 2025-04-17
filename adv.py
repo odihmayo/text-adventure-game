@@ -510,7 +510,7 @@ def play_game():
     print("\nAvialable Commands:")
     print("-Movement: north, east, south, west")
     print("-Actions: take <item>, use <item>, inventory, hint, save, load, help, quit")
-    print("Example: 'take map' or 'use sword'")
+    print("Example: 'take map' or 'use sword' or 'leaderboard'")
     print("-----")
 
     while True:
@@ -550,6 +550,9 @@ def play_game():
         command = command.strip()
         if not command:
             print("\nPlease enter a command. Type 'help' for a list of commands.")
+            continue
+        if command.lower() == "leaderboard":
+            print(player.display_leaderboard())
             continue
         valid_single_commands = ["north", "east", "south", "west", "quit", "inventory", "hint", "save", "load", "help"]
         if command in valid_single_commands:
