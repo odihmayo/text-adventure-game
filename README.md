@@ -40,6 +40,10 @@ Installation:
 - Use items like the map to reveal hidden exits or the sword to fight a guard. 
 - Save and load your progress to a JSON file. 
 - Earn points for actions like taking treasures or solving puzzles.
+  ASCII art for the title screen, treasure chest, and win screen.
+  A scoring leaderboard that tracks the top 5 highscores.
+  Sound effects for key events: entering the treasure room, winning the game, and triggering a trap
+  (requires '.wav' files in a sound\folder).
 
 
 Example Gameplay
