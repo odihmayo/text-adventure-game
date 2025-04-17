@@ -1,6 +1,8 @@
 import json
 import art
-import os   
+import os
+import pygame 
+pygame.mixer.init()   
 
 class Room:
     """A class representing a room in the text adventure game.
@@ -514,11 +516,18 @@ def play_game():
     while True:
         print("-----")
         print(player.current_room.get_description())
+        if player.current_room.name == "Treasure Room":
+            pygame.mixer.Sound("sound/chest.wav").play()
         print("-----")
 
         if any(item.name == "golden crown" for item in player.inventory):
             player.add_score(100)
             print(art.text2art("You win!"))
+            try:
+                pygame.mixer.Sound("sound/victory.wav").play()
+                pygame.time.wait(2000)
+            except pygame.error as e:
+                print(f"Error playing trap sound: {e}")
             print("\nCongratulation! You have obtained the golden crown and won the game!")
             print(f"Final score: {player.score}")
             player.update_leaderboard(player_name)
@@ -528,6 +537,11 @@ def play_game():
         if player.current_room.trap and "shield" not in [item.name for item in player.inventory]:
             print("\nYou triggered a trap in the Garden and lost!")
             print(f"Final score: {player.score}")
+            try:
+                pygame.mixer.Sound("sound/trap.wav").play()
+                pygame.time.wait(2000)
+            except pygame.error as e:
+                print(f"Error playing trap sound:{e}")
             player.update_leaderboard(player_name)
             print(player.display_leaderboard())
             return False
