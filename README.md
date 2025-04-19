@@ -44,6 +44,8 @@ Installation:
   A scoring leaderboard that tracks the top 5 highscores (viewable anytime with the 'leaderboard' command).
   Sound effects for key events: entering the treasure room, winning the game, and triggering a trap
   (requires '.wav' files in a sound\folder).
+  Dynamic room description that update based on player actions, such as items being taken, the chest being 
+  unlocked, or the guard being defeated.
 
 
 Example Gameplay
