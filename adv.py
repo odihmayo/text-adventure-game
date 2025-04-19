@@ -35,12 +35,18 @@ class Room:
             desc += f" Exits: {' , '.join(self.exits.keys())}."
         if self.items:
             desc += f" You see: {', '.join(item.name + ' ' + item.description for item in self.items)}."
+        else:
+            desc += f"The room is now empty."
         if self.trap:
-            desc += " Watch out there's a trap here!"
+            desc += " Watch out! there's a trap here!"
         if self.chest_locked:
             desc += " There's a locked chest here."
+        elif self.name == "Treasure Room" and not self.chest_locked:
+            desc += "The chest is now open."
         if self.guard_present:
             desc += "A guard is blocking the chest!"
+        elif self.name == "Treasure Room" and not self.guard_present:
+            desc += "The guard is gone."
         return desc
 
     def save(self):
@@ -546,7 +552,7 @@ def play_game():
             print(player.display_leaderboard())
             return False
 
-        command = input("What do you want to do? ").strip()
+        command = input("What do you want to do? ").strip().lower()  
         command = command.strip()
         if not command:
             print("\nPlease enter a command. Type 'help' for a list of commands.")
