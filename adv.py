@@ -25,7 +25,7 @@ class Room:
         self.chest_locked = chest_locked
         self.guard_present = guard_present
 
-    def get_description(self):
+    def get_description(self, player):
         """Get a formatted description of the room, including exists, items, traps, chest, and guard.
         Returns:
         str: The formatted description of the room.
@@ -36,17 +36,22 @@ class Room:
         if self.items:
             desc += f" You see: {', '.join(item.name + ' ' + item.description for item in self.items)}."
         else:
-            desc += f"The room is now empty."
+            desc += f" The room is now empty."
         if self.trap:
-            desc += " Watch out! there's a trap here!"
+            if self.name == "Garden" and any(item.name == "shield" for item in player.inventory):
+                desc += " The garden looks safer with your shield."
+            else:
+                desc += " Watch out! there's a trap here!"
         if self.chest_locked:
             desc += " There's a locked chest here."
         elif self.name == "Treasure Room" and not self.chest_locked:
-            desc += "The chest is now open."
+            desc += " The chest is now open."
         if self.guard_present:
-            desc += "A guard is blocking the chest!"
+            desc += " A guard is blocking the chest!"
         elif self.name == "Treasure Room" and not self.guard_present:
-            desc += "The guard is gone."
+            desc += " The guard is gone."
+        if self.name == "Living Room" and "east" in self.exits:
+            desc += " The eastern wall reveals an open passage."
         return desc
 
     def save(self):
@@ -521,7 +526,7 @@ def play_game():
 
     while True:
         print("-----")
-        print(player.current_room.get_description())
+        print(player.current_room.get_description(player))
         if player.current_room.name == "Treasure Room":
             pygame.mixer.Sound("sound/chest.wav").play()
         print("-----")
