@@ -15,8 +15,10 @@ class Room:
     trap(bool: Whether the room has a trap.
     chest_locked (bool): Whether the room has a locked chest.
     guard_present (bool): Whether a guard is present in the room.
+    puzzle (tuple): A tuple of (riddle, answer) for rooms with a puzzle, or None.
+    npc(tuple): A tuple of (name, riddle, answer) for rooms with an NPC,
     """
-    def __init__(self, name, description, exits=None, items=None, trap=False, chest_locked=False, guard_present=False):
+    def __init__(self, name, description, exits=None, items=None, trap=False, chest_locked=False, guard_present=False, puzzle=None, npc=None):
         self.name = name
         self.description = description
         self.exits = exits if exits is not None else {}
@@ -24,6 +26,8 @@ class Room:
         self.trap = trap
         self.chest_locked = chest_locked
         self.guard_present = guard_present
+        self.puzzle = puzzle
+        self.npc = npc
 
     def get_description(self, player):
         """Get a formatted description of the room, including exists, items, traps, chest, and guard.
@@ -52,6 +56,10 @@ class Room:
             desc += " The guard is gone."
         if self.name == "Living Room" and "east" in self.exits:
             desc += " The eastern wall reveals an open passage."
+        if self.puzzle:
+            desc += f"A riddle guards an exits: '{self.puzzle[0]}'"
+        if self.npc:
+            desc += f" {self.npc[0]} is here, waiting to speak with you"
         return desc
 
     def save(self):
@@ -66,7 +74,9 @@ class Room:
             "items": [{"type": item.__class__.__name__, "name":item.name, "description":item.description} for item in self.items],
             "trap": self.trap,
             "chest_locked": self.chest_locked,
-            "guard_present": self.guard_present
+            "guard_present": self.guard_present,
+            "puzzle": self.puzzle,
+            "npc": self.npc
         }
 
     @staticmethod
@@ -94,7 +104,9 @@ class Room:
             items=items,
             trap=data["trap"],
             chest_locked=data["chest_locked"],
-            guard_present=data.get("guard_present", False)
+            guard_present=data.get("guard_present", False),
+            puzzle=data.get("puzzle", None),
+            npc=data.get("npc",None)
         )
 
 class Player:
@@ -103,12 +115,15 @@ class Player:
     current_room (Room): The player's current room.
     inventory (list): A list of items the player is carrying.
     score (int): The player's current score.
+    Added to track solved riddles
+    solved_riddles (list): A list of room names where riddles have been solved.
     """
 
     def __init__(self, current_room):
         self.current_room = current_room
         self.inventory = []
         self.score = 0
+        self.solved_riddles = []
     
     def move(self, direction):
         """Move the player in a specified direction if possible.
@@ -120,6 +135,10 @@ class Player:
         str or None: The name of the next room if the move is possible, None otherwise.
         """
         if direction in self.current_room.exits:
+            if self.current_room.puzzle and direction == "north" and self.current_room.name == "Garden" and "Garden" not in self.solved_riddles:
+                return "The path to the  north is blocked by a riddle. Use 'solve <answer> to proceed."
+            if self.current_room.name == "Kitchen" and direction == "north" and not any(item.name == "key" for item in self.inventory):
+                return "North exit locked, need key."
             return self.current_room.exits[direction]
         return None
 
@@ -159,7 +178,8 @@ class Player:
         return {
             "current_room": self.current_room.name,
             "inventory": [{"type": item.__class__.__name__, "name": item.name, "description": item.description} for item in self.inventory],
-            "score": self.score
+            "score": self.score,
+            "solved_riddles": self.solved_riddles
         }
     
     @staticmethod
@@ -182,6 +202,7 @@ class Player:
             item_class = item_classes.get(item_type, Item)
             player.inventory.append(item_class(item_name, item_description))
         player.score = data["score"]
+        player.solved_riddles = data.get("solved_riddles", [])
         return player
 
     def hint(self, rooms):
@@ -262,6 +283,31 @@ class Player:
         for i, entry in enumerate(leaderboard, 1):
             result += f"{i}.{entry['name']}: {entry['score']} points\n"
         return result
+    
+    def solve_riddle(self, answer):
+        """Attempt to solve the riddle in the current room.
+        Args:
+        answer (str): The player's answer to the riddle.
+        Return:
+        str: A message indicating the result of  the attempt.
+        """
+        if self.current_room.puzzle and self.current_room.name == "Garden":
+            if answer.lower() == self.current_room.puzzle[1].lower():
+                self.solved_riddles.append(self.current_room.name)
+                self.add_score(20)
+                return "Correct! The path to the north is now open."
+            else:
+                return f"'{answer}' is incorrect. Try again with 'solve <answer>'."
+        return "There is no riddle to solve here."
+
+    def talk(self):
+        """Interact with the NPC in the current room.
+        Return:
+        str: A message from the NPC or an error message.
+        """
+        if self.current_room.npc:
+            return f"{self.current_room.npc[0]} says: '{self.current_room.npc[1]}' Use 'solve <answer> to respond."
+        return "There is no one to talk to here."
 
 class Item:
     """A base class for items in the text adventure game.
@@ -382,6 +428,24 @@ class Weapon(Item):
             player.add_score(30)
             return "You use the sword to defeat the guard! The path to the chest is now clear."
         return f"You can't use the {self.name} right now."
+
+class Key(Item):
+    """A class for keys, which unlock specific rooms.
+    Inherits from Item.
+    """
+    def __init__(self, name, description=" A key that unlocks a specific room."):
+        super().__init__(name, description)
+
+    def use(self, player, rooms):
+        """Use the key to unlock the Treasure Room from the Kitchen.
+        Args:
+        player(Player): The player using the weapon.
+        rooms (dict): A dictionary of all the rooms in the game.
+        Returns:
+        str: A message indicating the result of using the weapon.
+        """       
+        return f"You can't use the {self.name} right now. The key is needed to unlock the north exit in the kitchen." 
+            
                     
 def create_room():
     """Created a dictionary of rooms for the game, ensuring a fresh state for each session.
@@ -413,9 +477,10 @@ def create_room():
         "Garden": Room(
             name="Garden",
             description="You are in a sunny garden.",
-            exits={"east": "Kitchen"},
+            exits={"east": "Kitchen", "north": "Library"},
             items=[Tool("crowbar", "A heavy iron crowbar, perfect for prying things open.")],
-            trap=True
+            trap=True,
+            puzzle=("I speak without a mouth and hear without ears. What am I?", "echo")
         ),
 
         "Treasure Room": Room(
@@ -438,8 +503,16 @@ def create_room():
             items=[
                 Treasure("gem", "A sparkling ruby that glows faintly."), 
                 Tool("lockpick", "A small metal tool for picking locks."), 
-                Weapon("sword", "A sharp steel sword for combat.")
-            ]
+                Weapon("sword", "A sharp steel sword for combat."),
+            ],
+        ),
+
+        "Library": Room(
+            name="Library",
+            description="You are in a quiet library filled with ancient books.",
+            exits={"south": "Garden"},
+            items=[Key("key", "A rusty key that might unlock a secret door.")],
+            npc=("Teacher", "I'm tall when i'm young, and i'm short when i'm old. What am I?", "candle")
         ),
     }
 def save_game(player, rooms, filename="savegame.json"):
@@ -520,7 +593,7 @@ def play_game():
     
     print("\nAvialable Commands:")
     print("-Movement: north, east, south, west")
-    print("-Actions: take <item>, use <item>, inventory, hint, save, load, help, quit")
+    print("-Actions: take <item>, use <item>, solve <answer>, talk, inventory, hint, save, load, help, quit")
     print("Example: 'take map' or 'use sword' or 'leaderboard'")
     print("-----")
 
@@ -565,13 +638,16 @@ def play_game():
         if command.lower() == "leaderboard":
             print(player.display_leaderboard())
             continue
-        valid_single_commands = ["north", "east", "south", "west", "quit", "inventory", "hint", "save", "load", "help"]
+        valid_single_commands = ["north", "east", "south", "west", "quit", "inventory", "hint", "save", "load", "help", "talk"]
         if command in valid_single_commands:
             pass
         elif command.startswith("take ") or command == "take":
             pass
         elif command == "use" or (command.startswith("use ") and not command[4:].strip()):
             print("\nPlease specify an item to use (e.g.,'use map').")
+            continue
+        elif command == "solve" or (command.startswith("solve ") and not command[6:].strip()):
+            print("\nPlease specify an answer to solve (e.g, 'solve echo').")
             continue
         elif not command.replace(" ", "").isalnum():
             print("\nCommand can only contain letters, numbers, and spaces.") 
@@ -593,7 +669,7 @@ def play_game():
         elif command == "help":
             print("\nAvialable Commands:")
             print("- Movement: north, east, south, west")
-            print("- Action: take <item>, use <item>, inventory, hint, save, load, help, quit")
+            print("- Action: take <item>, use <item>, solve <answer>, talk, inventory, hint, save, load, help, quit")
             print("Goal: Find the golden crown and escape with it!")
         elif command == "save":
             print("\n" + save_game(player, rooms))
@@ -608,6 +684,26 @@ def play_game():
                 print("\nGame loaded successfully!")
             else:
                 print("\n" + message)
+        elif command == "talk":
+            print("\n" + player.talk())
+        elif command.startswith("solve "):
+            answer = command[6:].strip()
+            if not answer:
+                print("\nPlease specify an answer to solve (e.g, 'solve echo').")
+                continue
+            if not answer.replace(" ", "").isalnum():
+                print("\nAnswers can only contain letters, numbers, and spaces.")
+                continue
+            if player.current_room.name == "Library" and player.current_room.npc:
+                if answer.lower() == player.current_room.npc[2].lower():
+                    player.current_room.items.append(Key("key", "A rusty key that might unlock a secret door."))
+                    player.add_score(20)
+                    print("\nCorrect! The Teacher gives you a key.")
+                    player.current_room.npc = None
+                else:
+                    print(f"\n'{answer}' is incorrect. Try again with 'solve <answer>'.")
+            else:
+                print("\n" + player.solve_riddle(answer))
         elif command.startswith("take "):
             item_name = command[5:].strip()
             if not item_name:
@@ -636,10 +732,10 @@ def play_game():
                 print(f"\n{temp_item.use(player, rooms)}")
         else:
             next_room_name = player.move(command)
-            if next_room_name:
+            if next_room_name and isinstance(next_room_name, str) and next_room_name in rooms:
                 player.current_room = rooms[next_room_name]
             else:
-                print("\nYou can't go that way! Try a direction like 'north' or 'east'.")
+                print("\n" + (next_room_name if isinstance(next_room_name, str) else "You can't go that way! Try a direction like 'north' or 'east'."))
 
 def main():
     while True:
