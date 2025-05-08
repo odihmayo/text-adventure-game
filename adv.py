@@ -34,7 +34,7 @@ class Room:
         Returns:
         str: The formatted description of the room.
         """
-        desc = self.description
+        desc = f"You are in {self.name.lower()}."
         if self.exits:
             desc += f" Exits: {' , '.join(self.exits.keys())}."
         if self.items:
@@ -56,8 +56,9 @@ class Room:
             desc += " The guard is gone."
         if self.name == "Living Room" and "east" in self.exits:
             desc += " The eastern wall reveals an open passage."
-        if self.puzzle:
-            desc += f"A riddle guards an exits: '{self.puzzle[0]}'"
+        if self.puzzle and self.name == "Garden":
+            if "Garden" not in player.solved_riddles:
+                desc += f"A riddle guards an exits: '{self.puzzle[0]}'"
         if self.npc:
             desc += f" {self.npc[0]} is here, waiting to speak with you"
         return desc
@@ -306,7 +307,9 @@ class Player:
         str: A message from the NPC or an error message.
         """
         if self.current_room.npc:
-            return f"{self.current_room.npc[0]} says: '{self.current_room.npc[1]}' Use 'solve <answer> to respond."
+            if self.current_room.name == "Library":
+                return f"{self.current_room.npc[0]} says: '{self.current_room.npc[1]} Solve my riddle, and I'll give you a key to unlock a secret door! ' Use 'solve <answer>' to respond.."
+            return f"{self.current_room.npc[0]} says: '{self.current_room.npc[1]}' Use 'solve <answer>' to respond."
         return "There is no one to talk to here."
 
 class Item:
@@ -511,7 +514,7 @@ def create_room():
             name="Library",
             description="You are in a quiet library filled with ancient books.",
             exits={"south": "Garden"},
-            items=[Key("key", "A rusty key that might unlock a secret door.")],
+            items=[],
             npc=("Teacher", "I'm tall when i'm young, and i'm short when i'm old. What am I?", "candle")
         ),
     }
@@ -596,13 +599,10 @@ def play_game():
     print("-Actions: take <item>, use <item>, solve <answer>, talk, inventory, hint, save, load, help, quit")
     print("Example: 'take map' or 'use sword' or 'leaderboard'")
     print("-----")
+    print("\n" + player.current_room.get_description(player))
+    print("-----")
 
     while True:
-        print("-----")
-        print(player.current_room.get_description(player))
-        if player.current_room.name == "Treasure Room":
-            pygame.mixer.Sound("sound/chest.wav").play()
-        print("-----")
 
         if any(item.name == "golden crown" for item in player.inventory):
             player.add_score(100)
@@ -696,9 +696,9 @@ def play_game():
                 continue
             if player.current_room.name == "Library" and player.current_room.npc:
                 if answer.lower() == player.current_room.npc[2].lower():
-                    player.current_room.items.append(Key("key", "A rusty key that might unlock a secret door."))
+                    player.current_room.items.append(Key("key", "A rusty key that unlocks the kitchen's north exit."))
                     player.add_score(20)
-                    print("\nCorrect! The Teacher gives you a key.")
+                    print("\nCorrect! The Teacher hands you a rusty key that unlocks the kitchen's north exit.")
                     player.current_room.npc = None
                 else:
                     print(f"\n'{answer}' is incorrect. Try again with 'solve <answer>'.")
@@ -730,13 +730,23 @@ def play_game():
             else:
                 temp_item = Item(item_name)
                 print(f"\n{temp_item.use(player, rooms)}")
-        else:
-            next_room_name = player.move(command)
-            if next_room_name and isinstance(next_room_name, str) and next_room_name in rooms:
-                player.current_room = rooms[next_room_name]
+
+        if player.current_room.name == "Treasure Room":
+            pygame.mixer.Sound("sound/chest.wav").play()
+
+        elif command in ["north", "east", "south", "west"]:
+            next_room_name = player.move(command)  
+            if next_room_name  and isinstance(next_room_name, str) and next_room_name.title() in rooms:
+                player.current_room = rooms[next_room_name.title()]
             else:
                 print("\n" + (next_room_name if isinstance(next_room_name, str) else "You can't go that way! Try a direction like 'north' or 'east'."))
+        description = player.current_room.get_description(player)
+        print("\n" + description)
+            
 
+
+               
+            
 def main():
     while True:
         play_again = play_game()
