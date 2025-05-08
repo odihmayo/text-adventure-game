@@ -13,7 +13,7 @@ Installation:
 
  How to Play 
 
- Navigate through rooms to find items, solve puzzles, and avoid traps to win the golden crown. -
+ Navigate through rooms to find items, solve puzzles, interact with Npc  and avoid traps to win the golden crown. -
 
  Commands: - `north`, `east`, `south`, `west`: Move in a direction.
  take <item>: Pick up an item (e.g., `take map`).  
@@ -28,7 +28,11 @@ Installation:
  
  load: Load a saved game. 
  
- help: Show the command list.  
+ help: Show the command list.
+ 
+ talk: talk to Npc.
+
+ solve: solve puzzles and riddles 
  
  quit: Exit the game. 
  
@@ -37,11 +41,12 @@ Installation:
  Features  
  
  Explore interconnected rooms with unique items and puzzles.  
-- Use items like the map to reveal hidden exits or the sword to fight a guard. 
+- Use items like the map to reveal hidden exits or the sword to fight a guard.
+- Solve puzzles and interact with Npc. 
 - Save and load your progress to a JSON file. 
 - Earn points for actions like taking treasures or solving puzzles.
   ASCII art for the title screen, treasure chest, and win screen.
-  A scoring leaderboard that tracks the top 5 highscores (viewable anytime with the 'leaderboard' command).
+  A scoring leaderboard that tracks the top 5 high scores (viewable anytime with the 'leaderboard' command).
   Sound effects for key events: entering the treasure room, winning the game, and triggering a trap
   (requires '.wav' files in a sound\folder).
   Dynamic room description that update based on player actions, such as items being taken, the chest being 
