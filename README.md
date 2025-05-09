@@ -18,9 +18,11 @@ Installation:
  Commands: - `north`, `east`, `south`, `west`: Move in a direction.
  take <item>: Pick up an item (e.g., `take map`).  
  
- use <item>: Use an item (e.g., `use map`). 
+ use <item>: Use an item (e.g., `use map`).
+
+ drop <item>: Use 'drop <item> (e.g., 'drop map') to remove an item from your inventory and place it back in the current room. 
  
- inventory: List your items.  
+ inventory: List your items with Limits. Player can carry up to 3 items at a time. if inventory is full, you must drop an item before taking another.  
  
  hint: Get a hint for the current room.  
  
