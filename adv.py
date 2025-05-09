@@ -118,6 +118,7 @@ class Player:
     score (int): The player's current score.
     Added to track solved riddles
     solved_riddles (list): A list of room names where riddles have been solved.
+    max_inventory (int): Maximum number of items the player can carry (added for inventory limit).
     """
 
     def __init__(self, current_room):
@@ -125,6 +126,7 @@ class Player:
         self.inventory = []
         self.score = 0
         self.solved_riddles = []
+        self.max_inventory = 3
     
     def move(self, direction):
         """Move the player in a specified direction if possible.
@@ -148,8 +150,10 @@ class Player:
         Args:
         item (str): The name of the item to take.
         Returns:
-        bool: True if the item was taken, False otherwise.
+        bool: True if the item was taken, False if not found, or a string if inventory is full.
         """
+        if len(self.inventory) >= self.max_inventory:
+            return "Your inventory is full! Drop an item to take another."
         for room_item in self.current_room.items:
             if room_item.name == item:
                 self.current_room.items.remove(room_item)
@@ -159,6 +163,19 @@ class Player:
                 else:
                     self.add_score(10)
                 print(f"You picked up the {room_item.name}: {room_item.description}.")
+                return True
+        return False
+
+    def drop(self, item_name):
+        """Drop an item from the inventory and place it in the current room.
+        Args:
+        item_name (str): The name of the item to drop.
+        Returns:
+        bool or str: True if the item was dropped, False if not inventory.
+        """
+        for item in self.inventory:
+            if item.name == item_name:
+                self.inventory.remove(item)
                 return True
         return False
 
@@ -596,7 +613,7 @@ def play_game():
     
     print("\nAvialable Commands:")
     print("-Movement: north, east, south, west")
-    print("-Actions: take <item>, use <item>, solve <answer>, talk, inventory, hint, save, load, help, quit")
+    print("-Actions: take <item>, use <item>, drop <item> solve <answer>, talk, inventory, hint, save, load, help, quit")
     print("Example: 'take map' or 'use sword' or 'leaderboard'")
     print("-----")
     print("\n" + player.current_room.get_description(player))
@@ -638,10 +655,12 @@ def play_game():
         if command.lower() == "leaderboard":
             print(player.display_leaderboard())
             continue
-        valid_single_commands = ["north", "east", "south", "west", "quit", "inventory", "hint", "save", "load", "help", "talk"]
+        valid_single_commands = ["north", "east", "south", "west", "quit", "inventory", "hint", "save", "load", "help", "talk", "drop"]
         if command in valid_single_commands:
             pass
         elif command.startswith("take ") or command == "take":
+            pass
+        elif command.startswith("drop ") or command == "drop":
             pass
         elif command == "use" or (command.startswith("use ") and not command[4:].strip()):
             print("\nPlease specify an item to use (e.g.,'use map').")
@@ -669,7 +688,7 @@ def play_game():
         elif command == "help":
             print("\nAvialable Commands:")
             print("- Movement: north, east, south, west")
-            print("- Action: take <item>, use <item>, solve <answer>, talk, inventory, hint, save, load, help, quit")
+            print("- Action: take <item>, use <item>, drop <item>, solve <answer>, talk, inventory, hint, save, load, help, quit")
             print("Goal: Find the golden crown and escape with it!")
         elif command == "save":
             print("\n" + save_game(player, rooms))
@@ -712,10 +731,25 @@ def play_game():
             if not item_name.replace(" ", "" ).isalnum():
                 print("\nItem names can only contain letters, numbers, and spaces.")
                 continue
-            if player.take(item_name):
-                print(f"\nYou picked up the {item_name}.")
-            else:
+            result = player.take(item_name)
+            if result is True:
+                pass
+            elif result is False:
                 print(f"\nThere's no {item_name} here to take.")
+            else:
+                print(f"\n{result}")
+        elif command.startswith("drop "):
+            item_name = command[5:].strip()
+            if not item_name:
+                print("\nPlease specify an item to drop (e.g., 'drop map').")
+                continue
+            if not item_name.replace(" ", "").isalnum():
+                print("\nItem names can only contain letters, numbers, and spaces.")
+                continue
+            if player.drop(item_name):
+                print(f"\nYou dropped the {item_name}.")
+            else:
+                print(f"\nYou don't have a {item_name} to drop.")
         elif command.startswith("use "):
             item_name = command[4:].strip()
             if not item_name:
